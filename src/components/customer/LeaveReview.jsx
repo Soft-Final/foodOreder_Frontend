@@ -1,16 +1,64 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { submitFeedback } from "../api/menuApi";
 
 function LeaveReview() {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [activeInput, setActiveInput] = useState(null);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const orderId = location.state?.orderId;
+  const orderDetails = location.state?.orderDetails;
 
-  const handleSubmit = () => {
-    // Here you'd send feedback to the server
-    navigate("/thank-you");
+  useEffect(() => {
+    console.log('LeaveReview mounted with state:', {
+      orderId,
+      orderDetails,
+      fullLocationState: location.state
+    });
+    
+    if (!orderId) {
+      setError("Order ID is missing. Please try again from your order history.");
+    }
+  }, [orderId, orderDetails, location.state]);
+
+  const handleSubmit = async () => {
+    if (!orderId) {
+      setError("Order ID is missing. Please try again from your order history.");
+      return;
+    }
+
+    if (!rating || rating < 1 || rating > 5) {
+      setError("Please select a valid rating between 1 and 5.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      // Use the order number directly without any transformation
+      const feedbackData = {
+        order_id: orderId,
+        rating: rating,
+        feedback: feedback.trim() || ""
+      };
+
+      console.log('Submitting feedback with data:', feedbackData);
+      console.log('Original order details:', orderDetails);
+
+      await submitFeedback(feedbackData);
+      navigate("/thank-you");
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      setError(err.message || "Failed to submit feedback. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -19,6 +67,12 @@ function LeaveReview() {
         <h2 className="text-2xl font-bold text-[#D94F3C] mb-6 text-center">
           Rate Your Order
         </h2>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
 
         <div className="flex justify-center mb-6">
           {[1, 2, 3, 4, 5].map((star) => (
@@ -36,7 +90,7 @@ function LeaveReview() {
 
         <div className="mb-4">
           <label className="block mb-1 text-sm font-medium text-slate-700">
-            Your feedback (max 150 characters)
+            Your feedback (optional, max 150 characters)
           </label>
           <textarea
             value={feedback}
@@ -47,6 +101,7 @@ function LeaveReview() {
             }`}
             onFocus={() => setActiveInput("feedback")}
             onBlur={() => setActiveInput(null)}
+            placeholder="Share your experience with us..."
           />
           <div className="text-sm text-slate-500 text-right">
             {feedback.length}/150
@@ -55,14 +110,14 @@ function LeaveReview() {
 
         <button
           onClick={handleSubmit}
-          disabled={!rating}
+          disabled={!rating || isSubmitting}
           className={`w-full py-3 rounded-xl shadow-md font-semibold transition-all ${
-            rating
+            rating && !isSubmitting
               ? "bg-[#D94F3C] hover:bg-[#bf3d2d] text-white"
               : "bg-slate-300 text-white cursor-not-allowed"
           }`}
         >
-          Send
+          {isSubmitting ? "Sending..." : "Send"}
         </button>
       </div>
     </div>

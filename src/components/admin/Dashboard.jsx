@@ -21,7 +21,7 @@ import {
   ArrowTrendingUpIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
-import { getWeeklySales, getAnalytics } from '../api/menuApi';
+import { getWeeklySales, getAnalytics, getMenuPopularity, getOrders, getAverageRating } from '../api/menuApi';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 
@@ -53,9 +53,12 @@ const Dashboard = () => {
     totalOrders: 0,
     activeOrders: 0,
     menuItems: 0,
-    averageRating: 4.5, // Keeping this static for now
+    averageRating: 4.5,
   });
   const [orderStatus, setOrderStatus] = useState([]);
+  const [popularItems, setPopularItems] = useState([]);
+  const [totalItemsOrdered, setTotalItemsOrdered] = useState(0);
+  const [recentOrders, setRecentOrders] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,7 +83,7 @@ const Dashboard = () => {
           totalOrders: analyticsData.total_orders,
           activeOrders: analyticsData.active_orders,
           menuItems: analyticsData.menu_items,
-          averageRating: 4.5, // Keeping this static for now
+          averageRating: 4.5,
         });
 
         // Calculate order status for pie chart
@@ -89,6 +92,32 @@ const Dashboard = () => {
           { name: 'Completed', value: completedOrders },
           { name: 'In Progress', value: analyticsData.active_orders },
         ]);
+
+        // Fetch menu popularity
+        const popularityData = await getMenuPopularity();
+        setPopularItems(popularityData.popular_items);
+        setTotalItemsOrdered(popularityData.total_items_ordered);
+
+        // Fetch recent orders
+        const ordersData = await getOrders();
+        // Sort orders by creation date and take the most recent 4
+        const sortedOrders = ordersData.sort((a, b) => 
+          new Date(b.created_at) - new Date(a.created_at)
+        ).slice(0, 4);
+        
+        setRecentOrders(sortedOrders.map(order => ({
+          id: `#${order.order_number}`,
+          amount: parseFloat(order.total_price) || 0, // Convert to number and handle null/undefined
+          status: order.status.toLowerCase(),
+          created_at: order.created_at
+        })));
+
+        // Fetch average rating
+        const ratingData = await getAverageRating();
+        setStats(prevStats => ({
+          ...prevStats,
+          averageRating: ratingData.average_rating
+        }));
 
         setError(null);
       } catch (err) {
@@ -101,20 +130,6 @@ const Dashboard = () => {
 
     fetchData();
   }, []);
-
-  const popularItems = [
-    { name: "Classic Burger", sales: 156, percentage: 35 },
-    { name: "Caesar Salad", sales: 128, percentage: 29 },
-    { name: "Margherita Pizza", sales: 98, percentage: 22 },
-    { name: "Chicken Wings", sales: 62, percentage: 14 },
-  ];
-
-  const recentOrders = [
-    { id: "#2356", customer: "John Smith", amount: 45.5, status: "completed" },
-    { id: "#2355", customer: "Sarah Johnson", amount: 32.75, status: "preparing" },
-    { id: "#2354", customer: "Mike Peters", amount: 28.9, status: "pending" },
-    { id: "#2353", customer: "Emma Wilson", amount: 67.2, status: "completed" },
-  ];
 
   const statusChip = (status) => {
     const config = {
@@ -130,11 +145,29 @@ const Dashboard = () => {
         color: "bg-blue-100 text-blue-600",
         icon: <ClockIcon className="w-4 h-4 mr-1" />,
       },
+      in_progress: {
+        color: "bg-yellow-100 text-yellow-600",
+        icon: <ClockIcon className="w-4 h-4 mr-1" />,
+      },
+      ready: {
+        color: "bg-green-100 text-green-600",
+        icon: <CheckCircleIcon className="w-4 h-4 mr-1" />,
+      },
+      cancelled: {
+        color: "bg-red-100 text-red-600",
+        icon: <ClockIcon className="w-4 h-4 mr-1" />,
+      }
     };
+
+    const statusConfig = config[status] || {
+      color: "bg-gray-100 text-gray-600",
+      icon: <ClockIcon className="w-4 h-4 mr-1" />,
+    };
+
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config[status].color}`}>
-        {config[status].icon}
-        {status}
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusConfig.color}`}>
+        {statusConfig.icon}
+        {status.replace('_', ' ')}
       </span>
     );
   };
@@ -229,20 +262,28 @@ const Dashboard = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-gray-100">
-                    <td className="px-4 py-4 font-medium text-gray-900">{order.id}</td>
-                    <td className="px-4 py-4 text-gray-700">{order.customer}</td>
-                    <td className="px-4 py-4 text-right font-medium">${order.amount.toFixed(2)}</td>
-                    <td className="px-4 py-4 text-center">{statusChip(order.status)}</td>
+                {recentOrders.length > 0 ? (
+                  recentOrders.map((order) => (
+                    <tr key={order.id} className="border-b border-gray-100">
+                      <td className="px-4 py-4 font-medium text-gray-900">{order.id}</td>
+                      <td className="px-4 py-4 text-right font-medium">
+                        ${typeof order.amount === 'number' ? order.amount.toFixed(2) : '0.00'}
+                      </td>
+                      <td className="px-4 py-4 text-center">{statusChip(order.status)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3" className="px-4 py-4 text-center text-gray-500">
+                      No recent orders
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -250,16 +291,19 @@ const Dashboard = () => {
 
         {/* Trending Items */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Trending Items</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800">Trending Items</h2>
+            <span className="text-sm text-gray-500">Total Orders: {totalItemsOrdered}</span>
+          </div>
           <div className="space-y-4">
             {popularItems.map((item, index) => (
               <div key={item.name} className={`flex items-center p-4 rounded-xl ${index === 0 ? "bg-orange-50" : "hover:bg-gray-50"}`}>
                 <FireIcon className={`w-6 h-6 mr-4 ${index === 0 ? "text-orange-500" : "text-gray-400"}`} />
                 <div className="flex-1">
                   <h3 className="font-medium text-gray-900">{item.name}</h3>
-                  <p className="text-sm text-gray-500">{item.sales} orders</p>
+                  <p className="text-sm text-gray-500">{item.order_count} orders</p>
                 </div>
-                <span className="font-bold text-gray-700">{item.percentage}%</span>
+                <span className="font-bold text-gray-700">{item.percentage.toFixed(1)}%</span>
               </div>
             ))}
           </div>

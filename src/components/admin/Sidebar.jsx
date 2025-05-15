@@ -10,6 +10,7 @@ import {
   ChevronRightIcon,
   ListBulletIcon,
 } from "@heroicons/react/24/outline";
+import { logoutUser } from "../api/menuApi";
 
 const navItems = [
   { name: "Dashboard", path: "/", icon: HomeIcon },
@@ -19,16 +20,23 @@ const navItems = [
   { name: "Kitchen Orders", path: "/kitchen-orders", icon: ListBulletIcon },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ collapsed, setCollapsed }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("email");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logoutUser();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if the API call fails, we still want to clear local storage and redirect
+      navigate("/login");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -78,10 +86,13 @@ const Sidebar = () => {
       {/* Logout */}
       <button
         onClick={handleLogout}
-        className="flex items-center px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors"
+        disabled={isLoggingOut}
+        className={`flex items-center px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors ${
+          isLoggingOut ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         <ArrowRightOnRectangleIcon className="w-6 h-6" />
-        {!collapsed && <span className="ml-3">Logout</span>}
+        {!collapsed && <span className="ml-3">{isLoggingOut ? "Logging out..." : "Logout"}</span>}
       </button>
     </aside>
   );

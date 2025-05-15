@@ -1,49 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     ArrowUturnLeftIcon as ReplyIcon,
     TrashIcon,
     FlagIcon,
   } from '@heroicons/react/24/outline';
-  
+import { getFeedbacks } from '../api/menuApi';
 
 const FeedbackAdmin = () => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
 
-  const feedbacks = [
-    {
-      id: 1,
-      customerName: 'John Doe',
-      rating: 4,
-      comment: 'Great food and service! The atmosphere was perfect.',
-      date: '2024-03-15',
-      type: 'feedback',
-      status: 'new',
-      reply: null,
-    },
-    {
-      id: 2,
-      customerName: 'Jane Smith',
-      rating: 2,
-      comment: 'The food was cold when it arrived. Very disappointed.',
-      date: '2024-03-14',
-      type: 'complaint',
-      status: 'in-progress',
-      reply: 'We apologize for the inconvenience. Please contact us for a refund.',
-    },
-    {
-      id: 3,
-      customerName: 'Mike Johnson',
-      rating: 5,
-      comment: 'Best restaurant in town! Will definitely come back.',
-      date: '2024-03-13',
-      type: 'feedback',
-      status: 'resolved',
-      reply: 'Thank you for your kind words! We look forward to serving you again.',
-    },
-  ];
+  useEffect(() => {
+    const fetchFeedbacks = async () => {
+      try {
+        setLoading(true);
+        const data = await getFeedbacks();
+        setFeedbacks(data);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching feedbacks:", err);
+        setError("Failed to fetch feedbacks. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeedbacks();
+  }, []);
 
   const handleTabChange = (tabIndex) => {
     setSelectedTab(tabIndex);
@@ -63,7 +51,7 @@ const FeedbackAdmin = () => {
 
   const handleSubmitReply = () => {
     // In a real app, this would update the feedback in the database
-    console.log('Reply submitted:', replyText);
+
     handleCloseReplyDialog();
   };
 
@@ -77,10 +65,27 @@ const FeedbackAdmin = () => {
   };
 
   const filteredFeedbacks = feedbacks.filter((feedback) => {
-    if (selectedTab === 0) return feedback.type === 'feedback';
-    if (selectedTab === 1) return feedback.type === 'complaint';
+    const isFeedback = feedback.star_rating >= 3;
+    if (selectedTab === 0) return isFeedback;
+    if (selectedTab === 1) return !isFeedback;
     return true;
   });
+
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#D94F3C]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -118,10 +123,7 @@ const FeedbackAdmin = () => {
           <div key={feedback.id} className="bg-white rounded-lg shadow-sm border border-gray-100">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">{feedback.customerName}</h3>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(feedback.status)}`}>
-                  {feedback.status}
-                </span>
+                <h3 className="text-lg font-semibold text-gray-900">Order #{feedback.order_number}</h3>
               </div>
 
               <div className="flex items-center mb-4">
@@ -129,7 +131,7 @@ const FeedbackAdmin = () => {
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className={`w-5 h-5 ${i < feedback.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                      className={`w-5 h-5 ${i < feedback.star_rating ? 'text-yellow-400' : 'text-gray-300'}`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -137,40 +139,21 @@ const FeedbackAdmin = () => {
                     </svg>
                   ))}
                 </div>
-                <span className="ml-2 text-sm text-gray-500">{feedback.date}</span>
+                <span className="ml-2 text-sm text-gray-500">
+                  {new Date(feedback.created_at).toLocaleDateString()}
+                </span>
               </div>
 
-              <p className="text-gray-600 mb-4">{feedback.comment}</p>
-
-              {feedback.reply && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-blue-600 mb-2">Restaurant's Response:</p>
-                  <p className="text-gray-600 text-sm">{feedback.reply}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-gray-100 px-6 py-4 flex items-center space-x-4">
-              <button
-                onClick={() => handleReply(feedback)}
-                className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                <ReplyIcon className="w-5 h-5 mr-1" />
-                {feedback.reply ? 'Edit Reply' : 'Reply'}
-              </button>
-              
-              <button className="text-red-600 hover:text-red-800">
-                <TrashIcon className="w-5 h-5" />
-              </button>
-
-              {feedback.type === 'complaint' && (
-                <button className="text-yellow-600 hover:text-yellow-800">
-                  <FlagIcon className="w-5 h-5" />
-                </button>
-              )}
+              <p className="text-gray-600 mb-4">{feedback.feedback || "No comment provided"}</p>
             </div>
           </div>
         ))}
+
+        {filteredFeedbacks.length === 0 && (
+          <div className="text-center text-gray-500 py-8">
+            No {selectedTab === 0 ? 'feedback' : 'complaints'} found
+          </div>
+        )}
       </div>
 
       {/* Reply Dialog */}

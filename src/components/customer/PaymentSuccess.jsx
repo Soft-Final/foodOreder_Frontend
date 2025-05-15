@@ -7,8 +7,6 @@ import { createOrder } from "../api/menuApi";
 function PaymentSuccess() {
   const navigate = useNavigate();
   const { order, setOrder } = useCart();
-  const [canReview, setCanReview] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(60); // 1 minute for testing
   const [orderNumber, setOrderNumber] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,28 +55,6 @@ function PaymentSuccess() {
 
     createNewOrder();
   }, [order, setOrder]);
-
-  // Timer effect for review button
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setCanReview(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
 
   if (!order) {
     return (
@@ -143,20 +119,20 @@ function PaymentSuccess() {
           )}
         </div>
 
-        {!canReview && (
-          <div className="text-slate-600 mb-4">
-            You can leave a review in: {formatTime(secondsLeft)}
-          </div>
-        )}
-
-        {canReview && (
-          <button
-            onClick={() => navigate("/leave-review")}
-            className="bg-[#D94F3C] text-white px-6 py-3 rounded-xl hover:bg-[#bf3d2d] transition-colors"
-          >
-            Leave a Review
-          </button>
-        )}
+        <button
+          onClick={() => {
+            console.log('Navigating to review with order number:', orderNumber);
+            navigate("/leave-review", { 
+              state: { 
+                orderId: orderNumber,
+                orderDetails: order // Pass the full order details for debugging
+              } 
+            });
+          }}
+          className="bg-[#D94F3C] text-white px-6 py-3 rounded-xl hover:bg-[#bf3d2d] transition-colors"
+        >
+          Leave a Review
+        </button>
       </div>
     </div>
   );

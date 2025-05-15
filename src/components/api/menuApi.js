@@ -282,3 +282,194 @@ export const getAnalytics = async () => {
     throw error;
   }
 };
+
+export const getMenuPopularity = async () => {
+  try {
+    console.log('Fetching menu popularity data...');
+    const response = await fetch(`${API_BASE_URL}/analytics/menu-popularity/`, {
+      method: "GET",
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+
+    console.log('Menu popularity response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("API Error Response:", {
+        status: response.status,
+        statusText: response.statusText,
+        errorData: errorData
+      });
+      throw new Error(errorData.detail || "Failed to fetch menu popularity");
+    }
+
+    const data = await response.json();
+    console.log('Menu popularity data:', data);
+    return data;
+  } catch (error) {
+    console.error("Error in getMenuPopularity:", error);
+    throw error;
+  }
+};
+
+export const submitFeedback = async (feedbackData) => {
+  try {
+    const requestBody = {
+      order_number: feedbackData.order_id,
+      star_rating: parseInt(feedbackData.rating, 10),
+      feedback: feedbackData.feedback || ""
+    };
+    
+    console.log('Submitting feedback with request body:', requestBody);
+    
+    const response = await fetch(`${API_BASE_URL}/order/feedback/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('Feedback response status:', response.status);
+    
+    // Clone the response so we can read it multiple times
+    const responseClone = response.clone();
+    
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await responseClone.json();
+      } catch (e) {
+        const text = await responseClone.text();
+        console.error("Raw API Response:", text);
+        throw new Error("Failed to submit feedback: Invalid response from server");
+      }
+
+      console.error("API Error Response:", {
+        status: response.status,
+        statusText: response.statusText,
+        errorData: errorData,
+        requestData: requestBody,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      throw new Error(
+        errorData.detail || 
+        errorData.message || 
+        (typeof errorData === 'object' ? JSON.stringify(errorData) : "Failed to submit feedback")
+      );
+    }
+
+    const data = await response.json();
+    console.log('Feedback submitted successfully:', data);
+    return data;
+  } catch (error) {
+    console.error("Error in submitFeedback:", error);
+    throw error;
+  }
+};
+
+export const getFeedbacks = async () => {
+  try {
+    console.log('Fetching feedback data...');
+    const response = await fetch(`${API_BASE_URL}/order/orders/`, {
+      method: "GET",
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+
+    console.log('Feedback response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("API Error Response:", {
+        status: response.status,
+        statusText: response.statusText,
+        errorData: errorData
+      });
+      throw new Error(errorData.detail || "Failed to fetch feedback");
+    }
+
+    const orders = await response.json();
+    // Filter orders that have feedback and star_rating
+    const feedbacks = orders.filter(order => order.star_rating !== null && order.feedback !== null);
+    console.log('Feedback data:', feedbacks);
+    return feedbacks;
+  } catch (error) {
+    console.error("Error in getFeedbacks:", error);
+    throw error;
+  }
+};
+
+export const getAverageRating = async () => {
+  try {
+    console.log('Fetching average rating...');
+    const response = await fetch(`${API_BASE_URL}/order/average-rating/`, {
+      method: "GET",
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+
+    console.log('Average rating response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("API Error Response:", {
+        status: response.status,
+        statusText: response.statusText,
+        errorData: errorData
+      });
+      throw new Error(errorData.detail || "Failed to fetch average rating");
+    }
+
+    const data = await response.json();
+    console.log('Average rating data:', data);
+    return data;
+  } catch (error) {
+    console.error("Error in getAverageRating:", error);
+    throw error;
+  }
+};
+
+export const logoutUser = async () => {
+  try {
+    console.log('Logging out user...');
+    const response = await fetch(`${API_BASE_URL}/auth/token/logout/`, {
+      method: "POST",
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+
+    console.log('Logout response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("API Error Response:", {
+        status: response.status,
+        statusText: response.statusText,
+        errorData: errorData
+      });
+      throw new Error(errorData.detail || "Failed to logout");
+    }
+
+    // Clear local storage regardless of response
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("email");
+    
+    return true;
+  } catch (error) {
+    console.error("Error in logoutUser:", error);
+    // Still clear local storage even if the API call fails
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("email");
+    throw error;
+  }
+};

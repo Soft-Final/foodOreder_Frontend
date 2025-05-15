@@ -6,10 +6,10 @@ const Layout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       <main
-        className={`transition-all duration-300 p-6 w-full ${
+        className={`flex-1 transition-all duration-300 ${
           collapsed ? 'ml-20' : 'ml-64'
         }`}
       >
