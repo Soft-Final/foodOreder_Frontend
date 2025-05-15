@@ -1,14 +1,64 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
 import { useCart } from "../customer/CartContext";
+import { createOrder } from "../api/menuApi";
 
 function PaymentSuccess() {
   const navigate = useNavigate();
-  const { order } = useCart();
+  const { order, setOrder } = useCart();
   const [canReview, setCanReview] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(20 * 60); // 20 minutes
+  const [secondsLeft, setSecondsLeft] = useState(60); // 1 minute for testing
+  const [orderNumber, setOrderNumber] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const orderAttemptedRef = useRef(false);
 
+  useEffect(() => {
+    const createNewOrder = async () => {
+      // Check if we have items and haven't attempted to create an order yet
+      if (!order?.items || orderAttemptedRef.current) {
+        console.log('Skipping order creation:', { 
+          hasItems: !!order?.items, 
+          alreadyAttempted: orderAttemptedRef.current,
+          orderObject: order
+        });
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        orderAttemptedRef.current = true;
+        console.log('Creating order with items:', order.items);
+        const response = await createOrder(order.items);
+        console.log('Order creation response:', response);
+        setOrderNumber(response.order_number);
+        // Update the order with the backend order number
+        setOrder(prev => ({
+          ...prev,
+          orderNumber: response.order_number
+        }));
+      } catch (error) {
+        console.error("Failed to create order:", error);
+        console.error("Full error details:", {
+          message: error.message,
+          stack: error.stack,
+          order: order,
+          orderAttempted: orderAttemptedRef.current,
+          orderItems: order?.items
+        });
+        setError("Failed to create order. Please contact staff for assistance.");
+        // Reset the ref if order creation failed
+        orderAttemptedRef.current = false;
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    createNewOrder();
+  }, [order, setOrder]);
+
+  // Timer effect for review button
   useEffect(() => {
     const interval = setInterval(() => {
       setSecondsLeft((prev) => {
@@ -20,13 +70,14 @@ function PaymentSuccess() {
         return prev - 1;
       });
     }, 1000);
+
     return () => clearInterval(interval);
   }, []);
 
-  const formatTime = (secs) => {
-    const minutes = Math.floor(secs / 60);
-    const seconds = secs % 60;
-    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   if (!order) {
@@ -83,22 +134,29 @@ function PaymentSuccess() {
           Show this number when picking up your order:
         </div>
         <div className="text-xl font-bold text-[#D94F3C] mb-6">
-          {order.orderNumber}
+          {isLoading ? (
+            <div className="animate-pulse">Loading order number...</div>
+          ) : error ? (
+            <div className="text-red-500">{error}</div>
+          ) : (
+            orderNumber
+          )}
         </div>
 
-        <button
-          disabled={!canReview}
-          onClick={() => navigate("/leave-review")}
-          className={`w-full py-3 rounded-xl shadow-md font-semibold transition-all ${
-            canReview
-              ? "bg-[#D94F3C] hover:bg-[#bf3d2d] text-white"
-              : "bg-slate-300 text-white cursor-not-allowed"
-          }`}
-        >
-          {canReview
-            ? "Leave Review"
-            : `Leave Review in ${formatTime(secondsLeft)}`}
-        </button>
+        {!canReview && (
+          <div className="text-slate-600 mb-4">
+            You can leave a review in: {formatTime(secondsLeft)}
+          </div>
+        )}
+
+        {canReview && (
+          <button
+            onClick={() => navigate("/leave-review")}
+            className="bg-[#D94F3C] text-white px-6 py-3 rounded-xl hover:bg-[#bf3d2d] transition-colors"
+          >
+            Leave a Review
+          </button>
+        )}
       </div>
     </div>
   );

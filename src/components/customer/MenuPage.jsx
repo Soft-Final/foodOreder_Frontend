@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp, ShoppingCart } from "lucide-react";
 import { useCart } from "./CartContext";
+import { getCategories, getMenuItems } from "../api/menuApi";
 
 import margarita from "../../assets/margarita.jpg";
 import salad from "../../assets/caesar.jpg";
@@ -13,73 +14,66 @@ import cake from "../../assets/chocolate-cake.jpg";
 const MenuPage = () => {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [expandedItemId, setExpandedItemId] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { cart, setCart } = useCart();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        
+        const [categoriesData, menuItemsData] = await Promise.all([
+          getCategories(),
+          getMenuItems()
+        ]);
+        
+        
+        setCategories(categoriesData);
+        setMenuItems(menuItemsData);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      try {
+        const items = await getMenuItems();
+        setMenuItems(items);
+      } catch (error) {
+        console.error("Failed to fetch menu items:", error);
+      }
+    };
+
+    fetchMenuItems();
+  }, []);
 
   const toggleCategory = (cat) =>
     setExpandedCategory((prev) => (prev === cat ? null : cat));
   const toggleExpandItem = (id) =>
     setExpandedItemId((prev) => (prev === id ? null : id));
 
-  // Ensure we have a proper handler for adding items to cart
   const handleOrder = (item) => {
-    console.log("Adding to cart:", item);
     setCart((prev) => [...prev, item]);
   };
 
-  const categories = {
-    Lunch: [
-      {
-        id: 1,
-        name: "Margherita Pizza",
-        description: "Classic pizza with tomato sauce, mozzarella, and basil.",
-        price: 9.99,
-        image: margarita,
-      },
-    ],
-    Salad: [
-      {
-        id: 2,
-        name: "Caesar Salad",
-        description: "Romaine with Caesar dressing, croutons, and parmesan.",
-        price: 7.49,
-        image: salad,
-      },
-    ],
-    Dinner: [
-      {
-        id: 3,
-        name: "Beef Burger",
-        description: "Grilled beef patty with lettuce, tomato, and cheese.",
-        price: 11.25,
-        image: burger,
-      },
-      {
-        id: 5,
-        name: "Grilled Chicken",
-        description: "Grilled chicken breast with herbs and lemon.",
-        price: 12.0,
-        image: chicken,
-      },
-    ],
-    Pasta: [
-      {
-        id: 4,
-        name: "Spaghetti Bolognese",
-        description: "Spaghetti with meat sauce and parmesan.",
-        price: 10.5,
-        image: spaghetti,
-      },
-    ],
-    Dessert: [
-      {
-        id: 6,
-        name: "Chocolate Cake",
-        description: "Moist chocolate cake with creamy frosting.",
-        price: 6.75,
-        image: cake,
-      },
-    ],
-  };
+  if (isLoading) {
+    return (
+      <div className="p-4 sm:p-6 max-w-6xl mx-auto min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-slate-800 mb-4">Loading Menu...</h2>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coral-500 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto min-h-screen bg-slate-50">
@@ -92,70 +86,99 @@ const MenuPage = () => {
         </p>
       </header>
 
-      {Object.entries(categories).map(([category, items]) => (
-        <div key={category} className="mb-10">
-          <button
-            className="w-full flex justify-between items-center px-6 py-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-slate-200"
-            onClick={() => toggleCategory(category)}
-          >
-            <div className="flex items-center gap-4">
-              <span className="w-2 h-8 bg-coral-500 rounded-full" />
-              <h2 className="text-2xl font-semibold text-slate-800">
-                {category}
-              </h2>
-            </div>
-            {expandedCategory === category ? (
-              <ChevronUp className="text-slate-500" size={24} />
-            ) : (
-              <ChevronDown className="text-slate-500" size={24} />
-            )}
-          </button>
+      {categories.map((category) => {
 
-          {expandedCategory === category && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
-                >
-                  <div className="relative">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-52 object-cover cursor-pointer"
-                      onClick={() => toggleExpandItem(item.id)}
-                    />
-                    <span className="absolute top-4 right-4 bg-white/90 text-slate-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
-                      ${item.price.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-start gap-3 flex-wrap sm:flex-nowrap py-4 px-2">
-                    <div className="flex-1">
-                      <h3
-                        className="text-xl font-semibold text-slate-800 cursor-pointer"
-                        onClick={() => toggleExpandItem(item.id)}
-                      >
-                        {item.name}
-                      </h3>
-                      {expandedItemId === item.id && (
-                        <p className="mt-2 text-slate-600 text-sm leading-relaxed">
-                          {item.description}
-                        </p>
+        const categoryItems = menuItems.filter(item => {
+          const itemCatId = item.category_id !== undefined ? item.category_id : item.category?.id;
+         
+          return itemCatId === category.id;
+        });
+
+        
+        return (
+          <div key={category.id} className="mb-10">
+            <button
+              className="w-full flex justify-between items-center px-6 py-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-slate-200"
+              onClick={() => toggleCategory(category.id)}
+            >
+              <div className="flex items-center gap-4">
+                <span className="w-2 h-8 bg-coral-500 rounded-full" />
+                <h2 className="text-2xl font-semibold text-slate-800">
+                  {category.name}
+                </h2>
+              </div>
+              {expandedCategory === category.id ? (
+                <ChevronUp className="text-slate-500" size={24} />
+              ) : (
+                <ChevronDown className="text-slate-500" size={24} />
+              )}
+            </button>
+
+            {expandedCategory === category.id && categoryItems.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                {categoryItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
+                  >
+                    <div className="relative">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-52 object-cover cursor-pointer"
+                          onClick={() => toggleExpandItem(item.id)}
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-52 bg-gray-200 flex items-center justify-center cursor-pointer"
+                          onClick={() => toggleExpandItem(item.id)}
+                        >
+                          <span className="text-gray-400 text-lg">No Image</span>
+                        </div>
                       )}
+                      <span className="absolute top-4 right-4 bg-white/90 text-slate-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+                        ${parseFloat(item.price).toFixed(2)}
+                      </span>
                     </div>
-                    <button
-                      onClick={() => handleOrder(item)}
-                      className="bg-[#D94F3C] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#bf3d2d] transition-colors flex items-center gap-2 w-fit"
-                    >
-                      <span>Order Now</span>
-                    </button>
+                    <div className="flex justify-between items-start gap-3 flex-wrap sm:flex-nowrap py-4 px-2">
+                      <div className="flex-1">
+                        <h3
+                          className="text-xl font-semibold text-slate-800 cursor-pointer"
+                          onClick={() => toggleExpandItem(item.id)}
+                        >
+                          {item.name}
+                        </h3>
+                        {expandedItemId === item.id && (
+                          <p className="mt-2 text-slate-600 text-sm leading-relaxed">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleOrder(item)}
+                        disabled={!item.is_available}
+                        className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 w-fit ${
+                          item.is_available
+                            ? "bg-[#D94F3C] text-white hover:bg-[#bf3d2d] transition-colors"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                      >
+                        <span>{item.is_available ? "Order Now" : "Unavailable"}</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+                ))}
+              </div>
+            )}
+            {expandedCategory === category.id && categoryItems.length === 0 && (
+              <div className="text-center py-6 text-gray-500">
+                No items available in this category
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       {cart.length > 0 && (
         <div className="mt-12 flex justify-center">

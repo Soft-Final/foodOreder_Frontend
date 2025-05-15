@@ -4,6 +4,7 @@ import MenuManagement from "./components/admin/MenuManagement";
 import TableQR from "./components/admin/TableQR";
 import FeedbackAdmin from "./components/admin/FeedbackAdmin";
 import Layout from "./Layout"; // 👈 Create and import Layout
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import PaymentMethod from "./components/customer/PaymentMethod";
 import AddCard from "./components/customer/AddCard";
@@ -17,6 +18,7 @@ import MenuPage from "./components/customer/MenuPage";
 import Checkout from "./components/customer/Checkout";
 import PaymentSuccess from "./components/customer/PaymentSuccess";
 import LeaveReview from "./components/customer/LeaveReview";
+import KitchenOrders from "./components/admin/KitchenOrders";
 
 function App() {
   return (
@@ -30,33 +32,51 @@ function App() {
         <Route
           path="/"
           element={
-            <Layout>
-              <Dashboard />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/feedback-admin"
           element={
-            <Layout>
-              <FeedbackAdmin />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <FeedbackAdmin />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/menu-management"
           element={
-            <Layout>
-              <MenuManagement />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <MenuManagement />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kitchen-orders"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <KitchenOrders />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/qr"
           element={
-            <Layout>
-              <TableQR />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <TableQR />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 

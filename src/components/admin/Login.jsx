@@ -1,26 +1,39 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import { loginUser } from "../api/loginApi";
 
 function Login() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
+    setFormData((prevState) => ({
       ...prevState,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login submission here
-    console.log('Login submitted:', formData);
+    try {
+      const result = await loginUser(formData.email, formData.password);
+
+      // Save token and optionally user info to localStorage
+      localStorage.setItem("access_token", result.auth_token);
+      localStorage.setItem("user_id", result.user_id);
+      localStorage.setItem("email", result.email);
+
+      console.log("Login success:", result);
+
+      navigate("/");
+    } catch (err) {
+      console.error("Login error:", err.message);
+    }
   };
 
   return (
@@ -29,7 +42,7 @@ function Login() {
         <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
           Welcome Back
         </h1>
-      
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -72,14 +85,14 @@ function Login() {
 
         <div className="mt-8 pt-6 border-t border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0 sm:space-x-4 text-sm">
-            <button 
-              onClick={() => navigate('/register')}
+            <button
+              onClick={() => navigate("/register")}
               className="text-blue-600 hover:text-blue-800 transition-colors text-center"
             >
               Create new account
             </button>
-            <button 
-              onClick={() => navigate('/forgot-password')}
+            <button
+              onClick={() => navigate("/forgot-password")}
               className="text-gray-600 hover:text-gray-800 transition-colors text-center"
             >
               Forgot password?

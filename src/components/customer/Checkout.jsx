@@ -4,7 +4,12 @@ import { ShoppingCart } from "lucide-react";
 
 const Checkout = ({ onClose }) => {
   const { cart, setOrder } = useCart();
-  const total = cart.reduce((acc, item) => acc + item.price, 0).toFixed(2);
+  const total = cart.reduce((acc, item) => {
+    const quantity = item.quantity || 1;
+    const price = parseFloat(item.price) || 0;
+    return acc + (quantity * price);
+  }, 0).toFixed(2);
+  
   const navigate = useNavigate();
 
   const handleProceed = () => {
@@ -41,23 +46,29 @@ const Checkout = ({ onClose }) => {
               key={index}
               className="flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-100"
             >
-              <span className="text-slate-800 font-medium">{item.name}</span>
-              <span className="text-slate-600">${item.price.toFixed(2)}</span>
+              <div className="flex flex-col">
+                <span className="text-slate-800 font-medium">{item.name}</span>
+                <span className="text-sm text-slate-500">Quantity: {item.quantity || 1}</span>
+              </div>
+              <span className="text-slate-600">
+                ${((item.quantity || 1) * (parseFloat(item.price) || 0)).toFixed(2)}
+              </span>
             </li>
           ))}
         </ul>
 
-        <div className="flex justify-between items-center mb-8 p-4 bg-slate-50 rounded-lg border border-slate-100">
-          <span className="text-lg font-bold text-slate-800">Total:</span>
-          <span className="text-xl font-bold text-[#D94F3C]">${total}</span>
+        <div className="border-t border-slate-200 pt-4 mb-6">
+          <div className="flex justify-between items-center text-lg font-semibold text-slate-800">
+            <span>Total:</span>
+            <span>${total}</span>
+          </div>
         </div>
 
         <button
           onClick={handleProceed}
-          className="w-full bg-[#D94F3C] text-white px-6 py-4 rounded-xl shadow-xl hover:bg-[#bf3d2d] hover:shadow-2xl transition-all flex items-center justify-center gap-3"
+          className="w-full bg-[#D94F3C] text-white py-3 rounded-xl hover:bg-[#bf3d2d] transition-colors font-medium"
         >
-          <ShoppingCart size={20} />
-          <span className="font-medium">Proceed to Payment</span>
+          Proceed to Payment
         </button>
       </div>
     </div>

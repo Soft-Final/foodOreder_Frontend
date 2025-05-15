@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -20,6 +21,7 @@ import {
   ArrowTrendingUpIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import { getWeeklySales, getAnalytics } from '../api/menuApi';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 
@@ -43,28 +45,62 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
 );
 
 const Dashboard = () => {
-  const stats = {
-    totalOrders: 156,
-    activeOrders: 12,
-    menuItems: 45,
-    averageRating: 4.5,
-  };
+  const [salesData, setSalesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    activeOrders: 0,
+    menuItems: 0,
+    averageRating: 4.5, // Keeping this static for now
+  });
+  const [orderStatus, setOrderStatus] = useState([]);
 
-  const salesData = [
-    { name: 'Mon', sales: 4000 },
-    { name: 'Tue', sales: 3000 },
-    { name: 'Wed', sales: 2000 },
-    { name: 'Thu', sales: 2780 },
-    { name: 'Fri', sales: 1890 },
-    { name: 'Sat', sales: 2390 },
-    { name: 'Sun', sales: 3490 },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch weekly sales
+        const salesData = await getWeeklySales();
+        const transformedSalesData = Object.entries(salesData.weekly_sales).map(([day, sales]) => ({
+          name: day,
+          sales: sales
+        }));
+        setSalesData(transformedSalesData);
+        setDateRange({
+          start: salesData.week_start,
+          end: salesData.week_end
+        });
 
-  const orderStatus = [
-    { name: 'Completed', value: 65 },
-    { name: 'In Progress', value: 20 },
-    { name: 'Cancelled', value: 15 },
-  ];
+        // Fetch analytics
+        const analyticsData = await getAnalytics();
+        setStats({
+          totalOrders: analyticsData.total_orders,
+          activeOrders: analyticsData.active_orders,
+          menuItems: analyticsData.menu_items,
+          averageRating: 4.5, // Keeping this static for now
+        });
+
+        // Calculate order status for pie chart
+        const completedOrders = analyticsData.total_orders - analyticsData.active_orders;
+        setOrderStatus([
+          { name: 'Completed', value: completedOrders },
+          { name: 'In Progress', value: analyticsData.active_orders },
+        ]);
+
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+        setError("Failed to fetch dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const popularItems = [
     { name: "Classic Burger", sales: 156, percentage: 35 },
@@ -103,6 +139,22 @@ const Dashboard = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#D94F3C]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-500 mt-4">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Restaurant Dashboard</h1>
@@ -119,7 +171,14 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Sales Chart */}
         <div className="bg-white p-6 rounded-2xl shadow-lg">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Weekly Sales Overview</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">Weekly Sales Overview</h2>
+            {dateRange.start && dateRange.end && (
+              <span className="text-sm text-gray-500">
+                {new Date(dateRange.start).toLocaleDateString()} - {new Date(dateRange.end).toLocaleDateString()}
+              </span>
+            )}
+          </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesData}>
