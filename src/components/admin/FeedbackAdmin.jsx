@@ -6,7 +6,7 @@ import {
   } from '@heroicons/react/24/outline';
   
 
-const Feedback = () => {
+const FeedbackAdmin = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
@@ -214,4 +214,4 @@ const Feedback = () => {
   );
 };
 
-export default Feedback;
+export default FeedbackAdmin;

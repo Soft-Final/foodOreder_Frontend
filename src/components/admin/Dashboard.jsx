@@ -207,7 +207,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Popular Items Table */}
+      {/* Popular Items Table
       <div className="bg-white p-6 rounded-2xl shadow-lg">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Popular Menu Items</h2>
         <div className="overflow-x-auto">
@@ -230,7 +230,7 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

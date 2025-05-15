@@ -1,19 +1,19 @@
-import { useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import { Combobox } from '@headlessui/react';
-import PizzaImg from '../assets/pizza.jpg';
+import { useState } from "react";
+import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useFormik } from "formik";
+import * as yup from "yup";
+import { Combobox } from "@headlessui/react";
+import PizzaImg from "../../assets/pizza.jpg";
 
 const validationSchema = yup.object({
-  name: yup.string().required('Name is required'),
-  description: yup.string().required('Description is required'),
+  name: yup.string().required("Name is required"),
+  description: yup.string().required("Description is required"),
   price: yup
     .number()
-    .required('Price is required')
-    .positive('Price must be positive'),
-  category: yup.string().required('Category is required'),
-  image: yup.mixed().required('Image is required'),
+    .required("Price is required")
+    .positive("Price must be positive"),
+  category: yup.string().required("Category is required"),
+  image: yup.mixed().required("Image is required"),
 });
 
 const MenuManagement = () => {
@@ -22,27 +22,27 @@ const MenuManagement = () => {
   const [menuItems, setMenuItems] = useState([
     {
       id: 1,
-      name: 'Classic Pizza',
-      description: 'Juicy beef Pizza with extra cheese',
+      name: "Classic Pizza",
+      description: "Juicy beef Pizza with extra cheese",
       price: 12.99,
-      category: 'Lunch',
+      category: "Lunch",
       image: PizzaImg,
     },
   ]);
 
   const [categories, setCategories] = useState([
-    'Breakfast',
-    'Lunch',
-    'Dinner',
-    'Appetizers',
-    'Desserts',
-    'Beverages',
+    "Breakfast",
+    "Lunch",
+    "Dinner",
+    "Appetizers",
+    "Desserts",
+    "Beverages",
   ]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
 
   const filteredCategories =
-    query === ''
+    query === ""
       ? categories
       : categories.filter((category) =>
           category.toLowerCase().includes(query.toLowerCase())
@@ -50,10 +50,10 @@ const MenuManagement = () => {
 
   const formik = useFormik({
     initialValues: {
-      name: '',
-      description: '',
-      price: '',
-      category: '',
+      name: "",
+      description: "",
+      price: "",
+      category: "",
       image: null,
     },
     validationSchema,
@@ -61,7 +61,11 @@ const MenuManagement = () => {
       if (editItem) {
         const updatedItems = menuItems.map((item) =>
           item.id === editItem.id
-            ? { ...item, ...values, image: imagePreview || item.image }
+            ? {
+                ...item,
+                ...values,
+                image: imagePreview || item.image,
+              }
             : item
         );
         setMenuItems(updatedItems);
@@ -69,7 +73,7 @@ const MenuManagement = () => {
         const newItem = {
           id: menuItems.length + 1,
           ...values,
-          image: imagePreview || '',
+          image: imagePreview || "",
         };
         setMenuItems([...menuItems, newItem]);
       }
@@ -97,7 +101,7 @@ const MenuManagement = () => {
     setEditItem(null);
     setImagePreview(null);
     formik.resetForm();
-    setQuery('');
+    setQuery("");
   };
 
   const handleDelete = (id) => {
@@ -161,7 +165,7 @@ const MenuManagement = () => {
           <div className="bg-white rounded-xl shadow-lg w-full max-w-lg">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold">
-                {editItem ? 'Edit' : 'Add New'} Menu Item
+                {editItem ? "Edit" : "Add New"} Menu Item
               </h2>
             </div>
 
@@ -177,8 +181,8 @@ const MenuManagement = () => {
                     onChange={formik.handleChange}
                     className={`w-full px-3 py-2 border rounded-lg ${
                       formik.touched.name && formik.errors.name
-                        ? 'border-red-500'
-                        : 'border-gray-300'
+                        ? "border-red-500"
+                        : "border-gray-300"
                     }`}
                   />
                   {formik.touched.name && formik.errors.name && (
@@ -199,8 +203,8 @@ const MenuManagement = () => {
                     rows="3"
                     className={`w-full px-3 py-2 border rounded-lg ${
                       formik.touched.description && formik.errors.description
-                        ? 'border-red-500'
-                        : 'border-gray-300'
+                        ? "border-red-500"
+                        : "border-gray-300"
                     }`}
                   />
                   {formik.touched.description && formik.errors.description && (
@@ -222,8 +226,8 @@ const MenuManagement = () => {
                       onChange={formik.handleChange}
                       className={`w-full px-3 py-2 border rounded-lg ${
                         formik.touched.price && formik.errors.price
-                          ? 'border-red-500'
-                          : 'border-gray-300'
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                     />
                     {formik.touched.price && formik.errors.price && (
@@ -243,36 +247,54 @@ const MenuManagement = () => {
                         if (!categories.includes(value)) {
                           setCategories([...categories, value]);
                         }
-                        formik.setFieldValue('category', value);
+                        formik.setFieldValue("category", value);
+                        setQuery("");
                       }}
                     >
                       <div className="relative">
                         <Combobox.Input
                           className={`w-full px-3 py-2 border rounded-lg ${
                             formik.touched.category && formik.errors.category
-                              ? 'border-red-500'
-                              : 'border-gray-300'
+                              ? "border-red-500"
+                              : "border-gray-300"
                           }`}
                           onChange={(event) => setQuery(event.target.value)}
                           displayValue={(category) => category}
+                          placeholder="Select or add a category"
                         />
-                        <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none">
-                          {filteredCategories.map((category) => (
-                            <Combobox.Option
-                              key={category}
-                              value={category}
-                              className={({ active }) =>
-                                `relative cursor-default select-none py-2 pl-4 pr-4 ${
-                                  active
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-900'
-                                }`
-                              }
-                            >
-                              {category}
-                            </Combobox.Option>
-                          ))}
-                        </Combobox.Options>
+                        {filteredCategories.length > 0 || query !== "" ? (
+                          <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none">
+                            {filteredCategories.map((category) => (
+                              <Combobox.Option
+                                key={category}
+                                value={category}
+                                className={({ active }) =>
+                                  `relative cursor-default select-none py-2 pl-4 pr-4 ${
+                                    active
+                                      ? "bg-blue-600 text-white"
+                                      : "text-gray-900"
+                                  }`
+                                }
+                              >
+                                {category}
+                              </Combobox.Option>
+                            ))}
+                            {!categories.includes(query) && query !== "" && (
+                              <Combobox.Option
+                                value={query}
+                                className={({ active }) =>
+                                  `relative cursor-default select-none py-2 pl-4 pr-4 font-semibold ${
+                                    active
+                                      ? "bg-green-600 text-white"
+                                      : "text-green-700"
+                                  }`
+                                }
+                              >
+                                + Add "{query}"
+                              </Combobox.Option>
+                            )}
+                          </Combobox.Options>
+                        ) : null}
                       </div>
                     </Combobox>
                     {formik.touched.category && formik.errors.category && (
@@ -293,7 +315,7 @@ const MenuManagement = () => {
                     onChange={(event) => {
                       const file = event.currentTarget.files[0];
                       if (file) {
-                        formik.setFieldValue('image', file);
+                        formik.setFieldValue("image", file);
                         setImagePreview(URL.createObjectURL(file));
                       }
                     }}
@@ -326,7 +348,7 @@ const MenuManagement = () => {
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  {editItem ? 'Save Changes' : 'Add Item'}
+                  {editItem ? "Save Changes" : "Add Item"}
                 </button>
               </div>
             </form>
