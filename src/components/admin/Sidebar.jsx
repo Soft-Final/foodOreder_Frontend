@@ -1,23 +1,24 @@
+// src/components/admin/Sidebar.jsx
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   HomeIcon,
   ChatBubbleLeftRightIcon,
-  ClipboardDocumentListIcon,
   QrCodeIcon,
+  ListBulletIcon,
+  ClipboardDocumentListIcon,
   ArrowRightOnRectangleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { logoutUser } from "../api/menuApi";
 
 const navItems = [
-  { name: "Dashboard", path: "/", icon: HomeIcon },
-  { name: "Feedback", path: "/feedback-admin", icon: ChatBubbleLeftRightIcon },
-  { name: "Menu", path: "/menu-management", icon: ClipboardDocumentListIcon },
-  { name: "Manage QR", path: "/qr", icon: QrCodeIcon },
-  { name: "Kitchen Orders", path: "/kitchen-orders", icon: ListBulletIcon },
+  { name: "Dashboard",      path: "/",                icon: HomeIcon },
+  { name: "Feedback",       path: "/feedback-admin",  icon: ChatBubbleLeftRightIcon },
+  { name: "Manage QR",      path: "/qr",              icon: QrCodeIcon },
+  { name: "Kitchen Orders", path: "/kitchen-orders",  icon: ListBulletIcon },
+  { name: "Menu",           path: "/menu-management", icon: ClipboardDocumentListIcon },
 ];
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
@@ -25,17 +26,23 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const userType = localStorage.getItem("user_type");
+  const allowedPathsByRole = {
+    ADMIN:   ["/", "/qr", "/feedback-admin"],
+    KITCHEN: ["/qr", "/feedback-admin", "/kitchen-orders", "/menu-management"],
+  };
+  const allowedPaths = allowedPathsByRole[userType] || [];
+  const filteredNav = navItems.filter(item => allowedPaths.includes(item.path));
+
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      setIsLoggingOut(true);
       await logoutUser();
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Even if the API call fails, we still want to clear local storage and redirect
-      navigate("/login");
+    } catch (err) {
+      console.error("Logout error:", err);
     } finally {
-      setIsLoggingOut(false);
+      localStorage.clear();
+      navigate("/login");
     }
   };
 
@@ -45,15 +52,10 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         collapsed ? "w-20" : "w-64"
       }`}
     >
-      {/* Toggle Button */}
+      {/* Header / Toggle */}
       <div className="flex justify-between items-center mb-6">
-        {!collapsed && (
-          <h1 className="text-2xl font-bold text-gray-800">Admin</h1>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="text-gray-600 hover:text-gray-900"
-        >
+        {!collapsed && <h1 className="text-2xl font-bold">Admin</h1>}
+        <button onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? (
             <ChevronRightIcon className="w-6 h-6" />
           ) : (
@@ -62,9 +64,9 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="space-y-2 flex-1">
-        {navItems.map(({ name, path, icon: Icon }) => {
+      {/* Links */}
+      <nav className="flex-1 space-y-2">
+        {filteredNav.map(({ name, path, icon: Icon }) => {
           const isActive = location.pathname === path;
           return (
             <Link
@@ -92,7 +94,9 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         }`}
       >
         <ArrowRightOnRectangleIcon className="w-6 h-6" />
-        {!collapsed && <span className="ml-3">{isLoggingOut ? "Logging out..." : "Logout"}</span>}
+        {!collapsed && (
+          <span className="ml-3">{isLoggingOut ? "Logging out..." : "Logout"}</span>
+        )}
       </button>
     </aside>
   );
