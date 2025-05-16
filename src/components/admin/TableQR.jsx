@@ -3,7 +3,7 @@ import QRCode from "react-qr-code";
 import { PencilIcon, PrinterIcon } from "@heroicons/react/24/solid";
 
 const TableQR = () => {
-  const [qrUrl, setQrUrl] = useState("https://yourrestaurant.com/menu");
+  const [qrUrl, setQrUrl] = useState("http://165.22.74.5/menu");
   const [editing, setEditing] = useState(false);
   const [tempUrl, setTempUrl] = useState(qrUrl);
 

@@ -19,10 +19,43 @@ function Register() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle registration submission here
-    console.log('Registration submitted:', formData);
+
+    // Check if passwords match
+    if (formData.password !== formData.confirmPassword) {
+      alert('Passwords do not match!');
+      return;
+    }
+
+    // Map role to the backend user_type format
+    const userType = formData.role.toUpperCase();
+
+    try {
+      const response = await fetch('http://165.22.74.5:8000/user_authentication/register/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          user_type: userType
+        })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Registration failed.');
+      } else {
+        alert('Registration successful');
+        // Redirect to login page after registration
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Error during registration:', error);
+      alert('An error occurred during registration.');
+    }
   };
 
   return (
